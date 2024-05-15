@@ -24,25 +24,37 @@ def main():
     preferences = get_user_preferences()
 
     with sync_playwright() as p:
-        start = preferences['start_date']
-        end = preferences['return_date']
-        adults = preferences['adults']
-        kids = preferences['children']
-        rooms = preferences['rooms']
+        ss = preferences['destination']
+        checkin = preferences['start_date']
+        checkout = preferences['return_date']
+        group_adults = preferences['adults']
+        group_children = preferences['children']
+        no_rooms = preferences['rooms']
+        ss = ss.replace(" ", "+")
 
-        url = 'https://www.booking.com/index.html?sid=42ef08eb3fbb8d92c6f47b2d5f85ffcb&aid=355028'
+        base_url = "https://www.booking.com/searchresults.html?"
+        url_params = [
+            f"ss={ss}",
+            f"checkin={checkin}",
+            f"checkout={checkout}",
+            f"group_adults={group_adults}",
+            f"no_rooms={no_rooms}",
+            f"group_children={group_children}"
+        ]
+        url = base_url + "&".join(url_params)
+        
         browser = p.chromium.launch(headless=False)
         page = browser.new_page()
 
         page.goto(url, timeout=60000)
 
-        time.sleep(3)
-        page.click('input[name="ss"]')
-        page.fill('input[name="ss"]',preferences['destination'])
+        #time.sleep(3)
+        #page.click('input[name="ss"]')
+        #page.fill('input[name="ss"]',preferences['destination'])
 
-        time.sleep(1)
-        page.click('button[type="submit"]')
-        page.wait_for_load_state('networkidle')
+        #time.sleep(1)
+        #page.click('button[type="submit"]')
+        #page.wait_for_load_state('networkidle')
 
         hotels = page.locator('//div[@data-testid="property-card"]').all()
         
@@ -51,8 +63,10 @@ def main():
             hotel_dict = {}
             hotel_dict['hotel'] = hotel.locator('//div[@data-testid="title"]').inner_text()
             hotel_dict['price'] = hotel.locator('//span[@data-testid="price-and-discounted-price"]').inner_text()
-
-            hotels_list.append(hotel_dict)
+            price = hotel_dict['price']
+            price = price.replace('$','').replace(',','')
+            if float(price) <= float(preferences['budget']):
+                hotels_list.append(hotel_dict)
 
 
         print(hotels_list)
