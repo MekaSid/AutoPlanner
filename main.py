@@ -81,27 +81,27 @@ def activity_scrape(preferences):
         browser = p.chromium.launch(headless=False)
         activity_page = browser.new_page()
 
-        activity_url = 'https://www.tripadvisor.com/Search?q=' + ss
-        activity_page = browser.new_page()
+        activity_url = 'https://us.trip.com/things-to-do/list-293/city?citytype=dt&id=293&name=Osaka&keyword=&pshowcode=Ticket2&locale=en-US&curr=USD'
         activity_page.goto(activity_url, timeout = 60000)
 
-        time.sleep(3)
-        activity_page.click('button[class = "Cfwtz q wSSLS raQgL"]')
+        #time.sleep(5)
+        #activity_page.click('button[class = "Cfwtz q wSSLS raQgL"]')
         activity_page.wait_for_load_state('networkidle')
 
-        activities = activity_page.locator('//*[@id="lithium-root"]/main/div/div[2]/div/div/div[2]/div/div[2]/div[1]')
+        activities = activity_page.locator('//*[@id="ottd-smart-platform"]/section/div[2]/div[3]/div[2]/div/div/div[2]/div[2]/ul/li/a').all()
 
         activities_list = []
         for activity in activities:
-            activities_list.append(activity.locator('//*[@id="lithium-root"]/main/div/div[2]/div/div/div[2]/div/div[2]/div[1]/div[2]/div/a/div/div[2]/header/div/div/div[2]').inner_text())
-        
+            title = activity.locator("//div[@class='poi-name margin-bottom-gap']/h3").inner_text()
+            activities_list.append(title)
+                                                    
         print(activities_list)
 
         browser.close()
 
 def main():
     preferences = get_user_preferences()
-    hotel_scrape(preferences)
+    #hotel_scrape(preferences)
     activity_scrape(preferences)
     
 
