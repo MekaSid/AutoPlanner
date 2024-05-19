@@ -20,29 +20,39 @@ def get_user_preferences():
 
     return user_preferences
 
-def main():
-    preferences = get_user_preferences()
-
+def hotel_scrape(preferences):
     with sync_playwright() as p:
-        start = preferences['start_date']
-        end = preferences['return_date']
-        adults = preferences['adults']
-        kids = preferences['children']
-        rooms = preferences['rooms']
-
-        url = 'https://www.booking.com/index.html?sid=42ef08eb3fbb8d92c6f47b2d5f85ffcb&aid=355028'
+        ss = preferences['destination']
+        ss = ss.replace(" ", "+")
+        checkin = preferences['start_date']
+        checkout = preferences['return_date']
+        group_adults = preferences['adults']
+        group_children = preferences['children']
+        no_rooms = preferences['rooms']
+        
+        base_url = "https://www.booking.com/searchresults.html?"
+        url_params = [
+            f"ss={ss}",
+            f"checkin={checkin}",
+            f"checkout={checkout}",
+            f"group_adults={group_adults}",
+            f"no_rooms={no_rooms}",
+            f"group_children={group_children}"
+        ]
+        url = base_url + "&".join(url_params)
+        
         browser = p.chromium.launch(headless=False)
         page = browser.new_page()
 
         page.goto(url, timeout=60000)
 
-        time.sleep(3)
-        page.click('input[name="ss"]')
-        page.fill('input[name="ss"]',preferences['destination'])
+        #time.sleep(3)
+        #page.click('input[name="ss"]')
+        #page.fill('input[name="ss"]',preferences['destination'])
 
-        time.sleep(1)
-        page.click('button[type="submit"]')
-        page.wait_for_load_state('networkidle')
+        #time.sleep(1)
+        #page.click('button[type="submit"]')
+        #page.wait_for_load_state('networkidle')
 
         hotels = page.locator('//div[@data-testid="property-card"]').all()
         
@@ -51,14 +61,59 @@ def main():
             hotel_dict = {}
             hotel_dict['hotel'] = hotel.locator('//div[@data-testid="title"]').inner_text()
             hotel_dict['price'] = hotel.locator('//span[@data-testid="price-and-discounted-price"]').inner_text()
-
-            hotels_list.append(hotel_dict)
-
+            price = hotel_dict['price']
+            price = price.replace('$','').replace(',','')
+            if float(price) <= float(preferences['budget']):
+                hotels_list.append(hotel_dict)
 
         print(hotels_list)
+        
         df = pd.DataFrame(hotels_list)
 
         browser.close()
+
+def activity_scrape(preferences):
+
+    with sync_playwright() as p:
+        place = preferences['destination']
+        place = place.replace(" ", "-").lower()
+
+        browser = p.chromium.launch(headless=False)
+        activity_page = browser.new_page()
+
+        activity_url = f'https://www.lonelyplanet.com/{place}/attractions'
+        activity_page.goto(activity_url, timeout = 60000)
+
+        #time.sleep(5)
+        
+        activity_page.wait_for_load_state('networkidle')
+
+        activity_page.click('#ibuact-10650012671-top-getcity-293-0') #click to for location input dropdown
+        time.sleep(3)
+        activity_page.type('.input_val input_val_search',place) #not currently typing location in correct box
+        activity_page.click('.city_list_content_item') #click first location option
+        activity_page.wait_for_load_state('networkidle')
+        activities = activity_page.locator('//a[@class="js-poi-card-link"]')
+
+        #activities = activity_page.locator('//*[@id="ottd-smart-platform"]/section/div[2]/div[3]/div[2]/div/div/div[2]/div[2]/ul/li/a').all()
+
+        activities_list = []
+        for activity in activities:
+            activity_dict = {}
+            activity_dict['title'] = activity.inner_text()
+            activity_dict['description'] = activity.parent.query_selector("p").inner_text()
+            activity_dict['link'] = activity.get_attribute("href")
+            activities_list.append(activity_dict)
+                                                    
+        print("Scraped activities:", activities_list)
+
+        browser.close()
+
+def main():
+    preferences = get_user_preferences()
+    #hotel_scrape(preferences)
+    activity_scrape(preferences)
+    
 
 
 if __name__ == '__main__':
