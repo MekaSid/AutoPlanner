@@ -1,11 +1,11 @@
 from playwright.sync_api import sync_playwright
 import pandas as pd
 
-def main():
+def hotels(destination, checkin, checkout, num_people):
 
     with sync_playwright() as p:
-        url = 'https://www.booking.com/searchresults.html?ss=New+York&ssne=New+York&ssne_untouched=New+York&aid=355028&lang=en-us&sb=1&src_elem=sb&src=index&dest_id=20088325&dest_type=city&checkin=2024-05-10&checkout=2024-05-11&group_adults=2&no_rooms=1&group_children=0'
-
+        url = f'https://www.booking.com/searchresults.html?ss={destination}&checkin={checkin}&checkout={checkout}&group_adults={num_people}&no_rooms=1&group_children=0'
+        print(url)
         browser = p.chromium.launch(headless=False)
         page = browser.new_page()
         page.goto(url, timeout=60000)
@@ -54,7 +54,40 @@ def main2():
 
         browser.close()
 
+def main3():
 
+    with sync_playwright() as p:
+        url = 'https://travel.usnews.com/New_York_NY/Things_To_Do/'
+
+        browser = p.chromium.launch(headless=False)
+        page = browser.new_page()
+        page.goto(url, timeout=60000)
+
+        things = page.locator("//*[contains(concat(' ', normalize-space(@class), ' '), ' GenericList__ListItemContainer-tjuxmv-1 exYsXw ')]").all()
+        
+        i = 0
+        thing_list = []
+        for thing in things:
+            if i == 0:
+                i+=1
+                continue
+            thing_dict = {}
+            thing_dict['name'] = thing.locator('//*[@class="uitk-layout-grid uitk-layout-grid-has-auto-columns uitk-layout-grid-has-rows uitk-layout-grid-display-grid uitk-layout-flex-item"]').inner_text()
+
+            thing_list.append(thing_dict)
+
+
+        print(thing_list)
+
+
+        browser.close()
 if __name__ == '__main__':
-    main2()
+    #formated - orlando, 2024-05-10, 2024-05-14, 2
+    #for two words use - "new+york"
+    destination = "orlando"
+    checkin = "2024-05-12"
+    checkout = "2024-05-18"
+    people = 1
+    hotels(destination, checkin, checkout, people)
+    
 
