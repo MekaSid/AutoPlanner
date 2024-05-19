@@ -75,8 +75,8 @@ def hotel_scrape(preferences):
 def activity_scrape(preferences):
 
     with sync_playwright() as p:
-        ss = preferences['destination']
-        ss = ss.replace(" ", "+")
+        place = preferences['destination']
+        place = place.replace(" ", "+")
 
         browser = p.chromium.launch(headless=False)
         activity_page = browser.new_page()
@@ -88,10 +88,10 @@ def activity_scrape(preferences):
         
         activity_page.wait_for_load_state('networkidle')
 
-        activity_page.click('#ibuact-10650012671-top-getcity-293-0')
+        activity_page.click('#ibuact-10650012671-top-getcity-293-0') #click to for location input dropdown
         time.sleep(3)
-        activity_page.type('.input_val input_val_search','miami')
-        activity_page.click('.city_list_content_item')
+        activity_page.type('.input_val input_val_search',place) #not currently typing location in correct box
+        activity_page.click('.city_list_content_item') #click first location option
         activity_page.wait_for_load_state('networkidle')
 
         activities = activity_page.locator('//*[@id="ottd-smart-platform"]/section/div[2]/div[3]/div[2]/div/div/div[2]/div[2]/ul/li/a').all()
@@ -107,7 +107,7 @@ def activity_scrape(preferences):
 
 def main():
     preferences = get_user_preferences()
-    #hotel_scrape(preferences)
+    hotel_scrape(preferences)
     activity_scrape(preferences)
     
 
