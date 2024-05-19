@@ -85,7 +85,13 @@ def activity_scrape(preferences):
         activity_page.goto(activity_url, timeout = 60000)
 
         #time.sleep(5)
-        #activity_page.click('button[class = "Cfwtz q wSSLS raQgL"]')
+        
+        activity_page.wait_for_load_state('networkidle')
+
+        activity_page.click('#ibuact-10650012671-top-getcity-293-0')
+        time.sleep(3)
+        activity_page.type('.input_val input_val_search','miami')
+        activity_page.click('.city_list_content_item')
         activity_page.wait_for_load_state('networkidle')
 
         activities = activity_page.locator('//*[@id="ottd-smart-platform"]/section/div[2]/div[3]/div[2]/div/div/div[2]/div[2]/ul/li/a').all()
