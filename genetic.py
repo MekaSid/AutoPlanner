@@ -1,6 +1,8 @@
 # Example Data
 import random
 
+# Just run the code using python genetic.py
+
 hotels = [
     {'hotel': 'Normandie Hostel', 'price': '$302', 'rating': '8.1'}, 
     {'hotel': 'The Delphi Hotel', 'price': '$1,160', 'rating': '8.1'}, 
@@ -57,7 +59,13 @@ activities = [
 
 # {'destination': 'Los Angeles', 'start_date': '2024-05-22', 'return_date': '2024-05-30', 'budget': '4000', 'adults': '1', 'children': '0', 'rooms': '1'}
 
-budget = 800
+# Here are the variables you can change 
+# budget = total price maximum
+# trip_length = how long your trip is supposed to me 
+budget = 1500
+trip_length = 6
+
+# Don't change this
 population_size = 10
 generations = 50
 mutation_rate = 0.1
@@ -72,10 +80,14 @@ def create_individual():
 def create_population(size):
     return [create_individual() for _ in range(size)]
 
+def calculate_cost(individual):
+    hotel_cost_per_night = float(individual['place']['price'].replace('$', '').replace(',', ''))
+    total_hotel_cost = hotel_cost_per_night * trip_length
+    total_activity_cost = sum(activity['cost'] for activity in individual['activities'])
+    return total_hotel_cost + total_activity_cost
+
 def fitness(individual):
-    print(individual)
-    total_cost = float(individual['place']['price'].replace('$', '').replace(',', '')) + sum(activity['cost'] for activity in individual['activities'])
-    print(total_cost)
+    total_cost = calculate_cost(individual)
     total_value = float(individual['place']['rating']) + sum(activity['value'] for activity in individual['activities'])
     
     if total_cost > budget:
@@ -86,7 +98,10 @@ def fitness(individual):
 
 def selection(population):
     population.sort(key=fitness, reverse=True)
-    return population[:population_size // 2]
+    filtered_population = [individual for individual in population if fitness(individual) > 0]
+    while len(filtered_population) < 2:
+        filtered_population.append(random.choice(population))
+    return filtered_population[:population_size // 2]
 
 def remove_duplicates(activities):
     seen = set()
@@ -109,8 +124,6 @@ def crossover(parent1, parent2):
     }
     return child1, child2
 
-
-
 def mutate(individual):
     if random.random() < mutation_rate:
         individual['place'] = random.choice(hotels)
@@ -121,7 +134,7 @@ def mutate(individual):
 
 def genetic_algorithm():
     population = create_population(population_size)
-    for generation in range(generations):
+    for _ in range(generations):
         selected_population = selection(population)
         new_population = []
         while len(new_population) < population_size:
@@ -134,16 +147,40 @@ def genetic_algorithm():
     best_individual = max(population, key=fitness)
     return best_individual
 
-best_trip = genetic_algorithm()
+# Run the genetic_algorithm multiple times and select the best one under the budget and 
+# has the highest value instead of manually checking within the algorithm itself 
+
+def run_multiple_times(runs, budget):
+    best_individual = None
+    best_fitness = 0
+    
+    for _ in range(runs):
+        individual = genetic_algorithm()
+        individual_fitness = fitness(individual)
+        
+        if individual_fitness > best_fitness and budget >= calculate_cost(individual):
+            best_individual = individual
+            best_fitness = individual_fitness
+    
+    return best_individual
 
 
-print("Best Trip Plan:")
-print(f"Hotel: {best_trip['place']['hotel']} - Cost: {best_trip['place']['price']}, Rating: {best_trip['place']['rating']}")
-total_cost = float(best_trip['place']['price'].replace('$', '').replace(',', ''))
-total_value = float(best_trip['place']['rating'])
-for activity in best_trip['activities']:
-    print(f"Activity: {activity['name']} - Cost: ${activity['cost']}, Value: {activity['value']}")
-    total_cost += activity['cost']
-    total_value += activity['value']
-print(f"Total Cost: ${total_cost}")
-print(f"Total Value: {total_value}")
+
+best_individual = run_multiple_times(500, budget)
+
+if best_individual:
+    print("Best Trip Plan:")
+    print(f"Hotel: {best_individual['place']['hotel']} - Cost: {best_individual['place']['price']}, Rating: {best_individual['place']['rating']}")
+    
+    total_cost = calculate_cost(best_individual)
+    total_value = float(best_individual['place']['rating'])
+
+    for activity in best_individual['activities']:
+        print(f"Activity: {activity['name']} - Cost: ${activity['cost']}, Value: {activity['value']}")
+        total_value += activity['value']
+    
+    print(f"Total Cost: ${total_cost}")
+    print(f"Total Value: {total_value}")
+else:
+    print("No suitable trip found within the budget.")
+
