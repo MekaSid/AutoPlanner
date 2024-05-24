@@ -62,8 +62,8 @@ activities = [
 # Here are the variables you can change 
 # budget = total price maximum
 # trip_length = how long your trip is supposed to me 
-budget = 1500
-trip_length = 6
+budget = 10000
+trip_length = 5
 
 # Don't change this
 population_size = 10
@@ -93,7 +93,6 @@ def fitness(individual):
     if total_cost > budget:
         return 0
     return total_value
-
 
 
 def selection(population):

@@ -1,6 +1,7 @@
 from playwright.sync_api import sync_playwright
 import pandas as pd
 import time
+import re
 
 def get_user_preferences():
     print("Welcome to our Trip Planner! Please complete the following survey, so we can plan your trip.")
@@ -61,6 +62,10 @@ def hotel_scrape(preferences):
             hotel_dict = {}
             hotel_dict['hotel'] = hotel.locator('//div[@data-testid="title"]').inner_text()
             hotel_dict['price'] = hotel.locator('//span[@data-testid="price-and-discounted-price"]').inner_text()
+            rating_text = hotel.locator('//div[@data-testid="review-score"]').inner_text()
+            rating = re.search(r'(\d+\.\d+)', rating_text).group(1)
+            hotel_dict['rating'] = rating
+
             price = hotel_dict['price']
             price = price.replace('$','').replace(',','')
             if float(price) <= float(preferences['budget']):
@@ -90,9 +95,11 @@ def activity_scrape(preferences):
 
         activity_page.click('#ibuact-10650012671-top-getcity-293-0') #click to for location input dropdown
         time.sleep(3)
-        activity_page.type('.input_val input_val_search',place) #not currently typing location in correct box
-        activity_page.click('.city_list_content_item') #click first location option
+        activity_page.fill('.input_val', place) #not currently typing location in correct box
+        activity_page.click('.associate_card_item:first-child')
+
         activity_page.wait_for_load_state('networkidle')
+
 
         activities = activity_page.locator('//*[@id="ottd-smart-platform"]/section/div[2]/div[3]/div[2]/div/div/div[2]/div[2]/ul/li/a').all()
 
@@ -108,7 +115,7 @@ def activity_scrape(preferences):
 def main():
     preferences = get_user_preferences()
     hotel_scrape(preferences)
-    activity_scrape(preferences)
+    # activity_scrape(preferences)
     
 
 
