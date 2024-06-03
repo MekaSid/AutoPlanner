@@ -1,6 +1,14 @@
-from playwright.sync_api import sync_playwright
+from playwright.sync_api import sync_playwright, TimeoutError as PlaywrightTimeoutError
 import pandas as pd
-import time
+import re
+import time 
+
+# need to map destinations to attraction IDs lol
+DESTINATION_ATTRACTION_IDS = {
+    "greece": "100036",
+    "los-angeles": "120518",
+    "rome": "303"
+}
 
 def get_user_preferences():
     print("Welcome to our Trip Planner! Please complete the following survey, so we can plan your trip.")
@@ -72,49 +80,46 @@ def hotel_scrape(preferences):
 
         browser.close()
 
+# still need to get the rest of the prices
+# need to figure out how to get ratings
 def activity_scrape(preferences):
-
     with sync_playwright() as p:
-        place = preferences['destination']
-        place = place.replace(" ", "-").lower()
+        browser = p.chromium.launch()
+        page = browser.new_page()
 
-        browser = p.chromium.launch(headless=False)
-        activity_page = browser.new_page()
+        destination = preferences['destination'].replace(" ", "-")  
+        attraction_id = DESTINATION_ATTRACTION_IDS.get(destination)
+        if not attraction_id:
+            print(f"Error: No attraction ID found for destination '{preferences['destination']}'")
+            return None
 
-        activity_url = f'https://www.lonelyplanet.com/{place}/attractions'
-        activity_page.goto(activity_url, timeout = 60000)
-
-        #time.sleep(5)
+        url = f"https://us.trip.com/travel-guide/attraction/{destination}-{attraction_id}/tourist-attractions/?locale=en-US&curr=USD"
         
-        activity_page.wait_for_load_state('networkidle')
+        page.goto(url)
+        page.wait_for_selector('.tour-price')
+        prices = page.inner_text('.tour-price')
+        prices = prices.split('\n')
+        prices = list(filter(None, prices))
 
-        activity_page.click('#ibuact-10650012671-top-getcity-293-0') #click to for location input dropdown
-        time.sleep(3)
-        activity_page.type('.input_val input_val_search',place) #not currently typing location in correct box
-        activity_page.click('.city_list_content_item') #click first location option
-        activity_page.wait_for_load_state('networkidle')
-        activities = activity_page.locator('//a[@class="js-poi-card-link"]')
+        ratings = page.inner_text('.online-trip-review')
+        ratings = ratings.split('\n')
+        ratings = list(filter(None, ratings))
+        
+        attractions_data = []
+        for price, rating in zip(prices, ratings):
+            attraction_data = {
+                'price': price.strip(),
+                'rating': rating.strip() if rating.strip() else None  
+            }
+            attractions_data.append(attraction_data)
 
-        #activities = activity_page.locator('//*[@id="ottd-smart-platform"]/section/div[2]/div[3]/div[2]/div/div/div[2]/div[2]/ul/li/a').all()
+        return attractions_data
 
-        activities_list = []
-        for activity in activities:
-            activity_dict = {}
-            activity_dict['title'] = activity.inner_text()
-            activity_dict['description'] = activity.parent.query_selector("p").inner_text()
-            activity_dict['link'] = activity.get_attribute("href")
-            activities_list.append(activity_dict)
-                                                    
-        print("Scraped activities:", activities_list)
-
-        browser.close()
 
 def main():
     preferences = get_user_preferences()
     #hotel_scrape(preferences)
-    activity_scrape(preferences)
-    
-
+    print(activity_scrape(preferences))
 
 if __name__ == '__main__':
     main()
