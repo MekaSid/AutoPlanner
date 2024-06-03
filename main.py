@@ -59,7 +59,6 @@ def hotel_scrape(preferences):
                 try:
                     rating_text = hotel.locator('//div[@data-testid="review-score"]').inner_text(timeout=5000)
                     rating = re.search(r'(\d+\.\d+)', rating_text).group(1)
-                    print(rating)
                 except PlaywrightTimeoutError:
                     rating = '0.0'
                 if not rating == '0.0':
@@ -73,9 +72,10 @@ def hotel_scrape(preferences):
             except (PlaywrightTimeoutError, Exception) as e:
                 continue
         
+        print(hotels_list)
+        
         df = pd.DataFrame(hotels_list)
 
-        print(df)
 
         browser.close()
 
