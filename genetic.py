@@ -1,7 +1,4 @@
-# Example Data
 import random
-
-# Just run the code using python genetic.py
 
 hotels = [
     {'hotel': 'Normandie Hostel', 'price': '$302', 'rating': '8.1'}, 
@@ -61,12 +58,17 @@ activities = [
 
 # Here are the variables you can change 
 # budget = total price maximum
-# trip_length = how long your trip is supposed to me 
-budget = 10000
+# trip_length = how long your trip is supposed to be 
+
+# 1500/3 and 6000/5
+
+budget = 6000
 trip_length = 5
 
+
+
 # Don't change this
-population_size = 10
+population_size = 20
 generations = 50
 mutation_rate = 0.1
 
@@ -165,7 +167,7 @@ def run_multiple_times(runs, budget):
 
 
 
-best_individual = run_multiple_times(500, budget)
+best_individual = run_multiple_times(250, budget)
 
 if best_individual:
     print("Best Trip Plan:")
