@@ -114,7 +114,7 @@ def activity_scrape(preferences):
         prices = [float(element.inner_text().replace('$', '').replace(',', '').replace('From', '').replace(' ', '')) for element in price_elements]
 
         rating_elements = page.locator('//*[@id="__next"]/div[1]/div[2]/div[2]/div/div/div[2]/div[2]/ul/li/a/div[5]/div[2]/div[2]/span[1]').all()
-        ratings = [element.inner_text() for element in rating_elements]
+        ratings = [float(element.inner_text().replace('/5', '')) for element in rating_elements]
 
         attractions_data = []
         for name, price, rating in zip(activity_names, prices, ratings):
