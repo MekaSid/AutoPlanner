@@ -3,6 +3,18 @@ import pandas as pd
 import re
 import time 
 
+# need to map destinations to attraction IDs lol
+DESTINATION_ATTRACTION_IDS = {
+    "greece": "100036",
+    "los-angeles": "120518",
+    "rome": "303",
+    "new-york": "248",
+    "atlanta": "944",
+    "tokyo": "294",
+    "las-vegas": "252",
+    "osaka": "293"
+}
+
 def get_user_preferences():
     print("Welcome to our Trip Planner! Please complete the following survey, so we can plan your trip.")
 
@@ -47,81 +59,74 @@ def hotel_scrape(preferences):
 
         page.goto(url, timeout=60000)
 
+        #time.sleep(3)
+        #page.click('input[name="ss"]')
+        #page.fill('input[name="ss"]',preferences['destination'])
+
+        #time.sleep(1)
+        #page.click('button[type="submit"]')
+        #page.wait_for_load_state('networkidle')
+
         hotels = page.locator('//div[@data-testid="property-card"]').all()
         
         hotels_list = []
         for hotel in hotels:
-            try:
-                hotel_dict = {}
-                hotel_dict['hotel'] = hotel.locator('//div[@data-testid="title"]').inner_text(timeout=5000)
-                hotel_dict['price'] = hotel.locator('//span[@data-testid="price-and-discounted-price"]').inner_text(timeout=5000)
-                
-                try:
-                    rating_text = hotel.locator('//div[@data-testid="review-score"]').inner_text(timeout=5000)
-                    rating = re.search(r'(\d+\.\d+)', rating_text).group(1)
-                except PlaywrightTimeoutError:
-                    rating = '0.0'
-                if not rating == '0.0':
-                    hotel_dict['rating'] = rating
+            hotel_dict = {}
+            hotel_dict['hotel'] = hotel.locator('//div[@data-testid="title"]').inner_text()
+            hotel_dict['price'] = hotel.locator('//span[@data-testid="price-and-discounted-price"]').inner_text()
+            price = hotel_dict['price']
+            price = price.replace('$','').replace(',','')
+            if float(price) <= float(preferences['budget']):
+                hotels_list.append(hotel_dict)
 
-                price = hotel_dict['price']
-                price = price.replace('$', '').replace(',', '')
-                if float(price) <= float(preferences['budget']):
-                    hotels_list.append(hotel_dict)
-            
-            except (PlaywrightTimeoutError, Exception) as e:
-                continue
-        
         print(hotels_list)
         
         df = pd.DataFrame(hotels_list)
 
-
         browser.close()
-
 
 
 def activity_scrape(preferences):
-
     with sync_playwright() as p:
-        place = preferences['destination']
-        place = place.replace(" ", "+")
+        browser = p.chromium.launch()
+        page = browser.new_page()
 
-        browser = p.chromium.launch(headless=False)
-        activity_page = browser.new_page()
+        destination = preferences['destination'].replace(" ", "-")  
+        attraction_id = DESTINATION_ATTRACTION_IDS.get(destination)
+        if not attraction_id:
+            print(f"Error: No attraction ID found for destination '{preferences['destination']}'")
+            return None
 
-        activity_url = 'https://us.trip.com/things-to-do/list-293/city?citytype=dt&id=293&name=Osaka&keyword=&pshowcode=Ticket2&locale=en-US&curr=USD'
-        activity_page.goto(activity_url, timeout = 60000)
+        url = f"https://us.trip.com/travel-guide/attraction/{destination}-{attraction_id}/tourist-attractions/?locale=en-US&curr=USD"
 
-        #time.sleep(5)
-        
-        activity_page.wait_for_load_state('networkidle')
+        page.goto(url)
+        page.wait_for_selector('.poi-name', timeout=60000)  
 
-        activity_page.click('#ibuact-10650012671-top-getcity-293-0') #click to for location input dropdown
-        time.sleep(3)
-        activity_page.fill('.input_val', place) #not currently typing location in correct box
-        activity_page.click('.associate_card_item:first-child')
+        activity_elements = page.locator('//div[@class="poi-name margin-bottom-gap"]/h3').all()
+        activity_names = [element.inner_text() for element in activity_elements]
 
-        activity_page.wait_for_load_state('networkidle')
+        price_elements = page.locator('//*[@id="__next"]/div[1]/div[2]/div[2]/div/div/div[2]/div[2]/ul/li/a/div[5]/div[7]').all()
+        prices = [element.inner_text() for element in price_elements]
 
+        rating_elements = page.locator('//*[@id="__next"]/div[1]/div[2]/div[2]/div/div/div[2]/div[2]/ul/li/a/div[5]/div[2]/div[2]/span[1]').all()
+        ratings = [element.inner_text() for element in rating_elements]
 
-        activities = activity_page.locator('//*[@id="ottd-smart-platform"]/section/div[2]/div[3]/div[2]/div/div/div[2]/div[2]/ul/li/a').all()
+        attractions_data = []
+        for name, price, rating in zip(activity_names, prices, ratings):
+            attraction_data = {
+                'title': name,
+                'price': price,
+                'rating': rating
+            }
+            attractions_data.append(attraction_data)
 
-        activities_list = []
-        for activity in activities:
-            title = activity.locator("//div[@class='poi-name margin-bottom-gap']/h3").inner_text()
-            activities_list.append(title)
-                                                    
-        print(activities_list)
+        return attractions_data
 
-        browser.close()
 
 def main():
     preferences = get_user_preferences()
-    hotel_scrape(preferences)
-    # activity_scrape(preferences)
-    
-
+    #hotel_scrape(preferences)
+    print(activity_scrape(preferences))
 
 if __name__ == '__main__':
     main()

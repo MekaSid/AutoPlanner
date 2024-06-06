@@ -89,5 +89,3 @@ if __name__ == '__main__':
     checkout = "2024-05-18"
     people = 1
     hotels(destination, checkin, checkout, people)
-    
-

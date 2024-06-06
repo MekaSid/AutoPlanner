@@ -100,7 +100,7 @@ def fitness(individual):
 def selection(population):
     population.sort(key=fitness, reverse=True)
     filtered_population = [individual for individual in population if fitness(individual) > 0]
-    while len(filtered_population) < 2:
+    while len(filtered_population) < 2 and len(filtered_population) < population_size:
         filtered_population.append(random.choice(population))
     return filtered_population[:population_size // 2]
 
