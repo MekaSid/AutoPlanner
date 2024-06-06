@@ -59,39 +59,44 @@ def hotel_scrape(preferences):
 
         page.goto(url, timeout=60000)
 
-        #time.sleep(3)
-        #page.click('input[name="ss"]')
-        #page.fill('input[name="ss"]',preferences['destination'])
-
-        #time.sleep(1)
-        #page.click('button[type="submit"]')
-        #page.wait_for_load_state('networkidle')
-
         hotels = page.locator('//div[@data-testid="property-card"]').all()
         
         hotels_list = []
         for hotel in hotels:
-            hotel_dict = {}
-            hotel_dict['hotel'] = hotel.locator('//div[@data-testid="title"]').inner_text()
-            hotel_dict['price'] = hotel.locator('//span[@data-testid="price-and-discounted-price"]').inner_text()
-            price = hotel_dict['price']
-            price = price.replace('$','').replace(',','')
-            if float(price) <= float(preferences['budget']):
-                hotels_list.append(hotel_dict)
+            try:
+                hotel_dict = {}
+                hotel_dict['hotel'] = hotel.locator('//div[@data-testid="title"]').inner_text(timeout=5000)
+                hotel_dict['price'] = hotel.locator('//span[@data-testid="price-and-discounted-price"]').inner_text(timeout=5000)
+                
+                try:
+                    rating_text = hotel.locator('//div[@data-testid="review-score"]').inner_text(timeout=5000)
+                    rating = re.search(r'(\d+\.\d+)', rating_text).group(1)
+                except PlaywrightTimeoutError:
+                    rating = '0.0'
+                if not rating == '0.0':
+                    hotel_dict['rating'] = rating
 
+                price = hotel_dict['price']
+                price = price.replace('$', '').replace(',', '')
+                if float(price) <= float(preferences['budget']):
+                    hotels_list.append(hotel_dict)
+            
+            except (PlaywrightTimeoutError, Exception) as e:
+                continue
+        
         print(hotels_list)
         
         df = pd.DataFrame(hotels_list)
 
-        browser.close()
 
+        browser.close()
 
 def activity_scrape(preferences):
     with sync_playwright() as p:
         browser = p.chromium.launch()
         page = browser.new_page()
 
-        destination = preferences['destination'].replace(" ", "-")  
+        destination = preferences['destination'].replace(" ", "-")
         attraction_id = DESTINATION_ATTRACTION_IDS.get(destination)
         if not attraction_id:
             print(f"Error: No attraction ID found for destination '{preferences['destination']}'")
@@ -125,7 +130,7 @@ def activity_scrape(preferences):
 
 def main():
     preferences = get_user_preferences()
-    #hotel_scrape(preferences)
+    # hotel_scrape(preferences)
     print(activity_scrape(preferences))
 
 if __name__ == '__main__':
