@@ -7,7 +7,12 @@ import time
 DESTINATION_ATTRACTION_IDS = {
     "greece": "100036",
     "los-angeles": "120518",
-    "rome": "303"
+    "rome": "303",
+    "new-york": "248",
+    "atlanta": "944",
+    "tokyo": "294",
+    "las-vegas": "252",
+    "osaka": "293"
 }
 
 def get_user_preferences():
@@ -80,8 +85,7 @@ def hotel_scrape(preferences):
 
         browser.close()
 
-# still need to get the rest of the prices
-# need to figure out how to get ratings
+
 def activity_scrape(preferences):
     with sync_playwright() as p:
         browser = p.chromium.launch()
@@ -94,22 +98,25 @@ def activity_scrape(preferences):
             return None
 
         url = f"https://us.trip.com/travel-guide/attraction/{destination}-{attraction_id}/tourist-attractions/?locale=en-US&curr=USD"
-        
-        page.goto(url)
-        page.wait_for_selector('.tour-price')
-        prices = page.inner_text('.tour-price')
-        prices = prices.split('\n')
-        prices = list(filter(None, prices))
 
-        ratings = page.inner_text('.online-trip-review')
-        ratings = ratings.split('\n')
-        ratings = list(filter(None, ratings))
-        
+        page.goto(url)
+        page.wait_for_selector('.poi-name', timeout=60000)  
+
+        activity_elements = page.locator('//div[@class="poi-name margin-bottom-gap"]/h3').all()
+        activity_names = [element.inner_text() for element in activity_elements]
+
+        price_elements = page.locator('//*[@id="__next"]/div[1]/div[2]/div[2]/div/div/div[2]/div[2]/ul/li/a/div[5]/div[7]').all()
+        prices = [element.inner_text() for element in price_elements]
+
+        rating_elements = page.locator('//*[@id="__next"]/div[1]/div[2]/div[2]/div/div/div[2]/div[2]/ul/li/a/div[5]/div[2]/div[2]/span[1]').all()
+        ratings = [element.inner_text() for element in rating_elements]
+
         attractions_data = []
-        for price, rating in zip(prices, ratings):
+        for name, price, rating in zip(activity_names, prices, ratings):
             attraction_data = {
-                'price': price.strip(),
-                'rating': rating.strip() if rating.strip() else None  
+                'title': name,
+                'price': price,
+                'rating': rating
             }
             attractions_data.append(attraction_data)
 
