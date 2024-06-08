@@ -1,7 +1,10 @@
 from playwright.sync_api import sync_playwright, TimeoutError as PlaywrightTimeoutError
+import genetic
+from datetime import datetime
 import pandas as pd
 import re
 import time 
+
 
 # need to map destinations to attraction IDs lol
 DESTINATION_ATTRACTION_IDS = {
@@ -84,12 +87,12 @@ def hotel_scrape(preferences):
             except (PlaywrightTimeoutError, Exception) as e:
                 continue
         
-        print(hotels_list)
         
         df = pd.DataFrame(hotels_list)
 
-
         browser.close()
+
+        return hotels_list
 
 def activity_scrape(preferences):
     with sync_playwright() as p:
@@ -130,8 +133,63 @@ def activity_scrape(preferences):
 
 def main():
     preferences = get_user_preferences()
-    # hotel_scrape(preferences)
-    print(activity_scrape(preferences))
+    hotels = hotel_scrape(preferences)
+    # print(hotels)
+
+    budget = float(preferences['budget'])
+    trip_length = (datetime.strptime(preferences['return_date'], "%Y-%m-%d") - datetime.strptime(preferences['start_date'], "%Y-%m-%d")).days
+
+    population_size = 20
+    generations = 50
+    mutation_rate = 0.1
+
+
+    activities = [
+        {'name': 'Touring Universal Studios Hollywood', 'cost': 100, 'value': 9.5},
+        {'name': 'Enjoying a day at Disneyland Resort', 'cost': 150, 'value': 9.5},
+        {'name': 'Taking a studio tour at Warner Bros. Studio', 'cost': 60, 'value': 9.0},
+        {'name': 'Watching a concert at the Hollywood Bowl', 'cost': 50, 'value': 9.0},
+        {'name': 'Attending a performance at the Greek Theatre', 'cost': 50, 'value': 9.0},
+        {'name': 'Visiting the Los Angeles County Museum of Art (LACMA)', 'cost': 25, 'value': 9.0},
+        {'name': 'Attending a game at Dodger Stadium', 'cost': 30, 'value': 8.5},
+        {'name': 'Visiting the Getty Center', 'cost': 20, 'value': 9.0},
+        {'name': 'Taking a scenic drive along Pacific Coast Highway', 'cost': 0, 'value': 8.0},
+        {'name': 'Exploring the Griffith Observatory', 'cost': 0, 'value': 8.5},
+        {'name': 'Shopping on Rodeo Drive', 'cost': 0, 'value': 8.0},
+        {'name': 'Strolling along Santa Monica Pier', 'cost': 0, 'value': 8.0},
+        {'name': 'Attending a live taping of a TV show', 'cost': 0, 'value': 8.0},
+        {'name': 'Exploring Venice Beach', 'cost': 0, 'value': 7.5},
+        {'name': 'Hiking in Griffith Park', 'cost': 0, 'value': 8.5},
+        {'name': 'Biking along the Venice Beach Boardwalk', 'cost': 0, 'value': 7.5},
+        {'name': 'Checking out the Hollywood Walk of Fame', 'cost': 0, 'value': 7.0},
+        {'name': 'Exploring the Museum of Contemporary Art (MOCA)', 'cost': 15, 'value': 8.0},
+        {'name': 'Exploring the California Science Center', 'cost': 0, 'value': 8.0},
+        {'name': 'Taking a scenic drive along Mulholland Drive', 'cost': 0, 'value': 8.0},
+        {'name': 'Exploring the Japanese American National Museum', 'cost': 12, 'value': 8.0},
+        {'name': 'Attending a performance at the Ahmanson Theatre', 'cost': 50, 'value': 9.0},
+        {'name': 'Visiting the Griffith Park Merry-Go-Round', 'cost': 0, 'value': 7.0},
+        {'name': 'Relaxing at Echo Park Lake', 'cost': 0, 'value': 7.5}
+    ]
+
+    best_individual = genetic.run_multiple_times(250, budget, hotels, activities, trip_length, population_size, generations, mutation_rate)
+
+    if best_individual:
+        print("Best Trip Plan:")
+        print(f"Hotel: {best_individual['place']['hotel']} - Cost: {best_individual['place']['price']}, Rating: {best_individual['place']['rating']}")
+        
+        total_cost = genetic.calculate_cost(best_individual, trip_length)
+        total_value = float(best_individual['place']['rating'])
+
+        for activity in best_individual['activities']:
+            print(f"Activity: {activity['name']} - Cost: ${activity['cost']}, Value: {activity['value']}")
+            total_value += activity['value']
+        
+        print(f"Total Cost: ${total_cost}")
+        print(f"Total Value: {total_value}")
+    else:
+        print("No suitable trip found within the budget.")
+
+    # print(activity_scrape(preferences))"""
 
 if __name__ == '__main__':
     main()
