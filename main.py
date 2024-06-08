@@ -87,17 +87,15 @@ def hotel_scrape(preferences):
             except (PlaywrightTimeoutError, Exception) as e:
                 continue
         
-        
-        df = pd.DataFrame(hotels_list)
-
         browser.close()
 
         return hotels_list
 
 def activity_scrape(preferences):
     with sync_playwright() as p:
-        browser = p.chromium.launch()
-        page = browser.new_page()
+
+        browser = p.chromium.launch(headless=False)
+        activity_page = browser.new_page()
 
         destination = preferences['destination'].replace(" ", "-")
         attraction_id = DESTINATION_ATTRACTION_IDS.get(destination)
@@ -105,31 +103,32 @@ def activity_scrape(preferences):
             print(f"Error: No attraction ID found for destination '{preferences['destination']}'")
             return None
 
-        url = f"https://us.trip.com/travel-guide/attraction/{destination}-{attraction_id}/tourist-attractions/?locale=en-US&curr=USD"
+        activity_url = f"https://us.trip.com/travel-guide/attraction/{destination}-{attraction_id}/tourist-attractions/?locale=en-US&curr=USD"
 
-        page.goto(url)
-        page.wait_for_selector('.poi-name', timeout=60000)  
+        activity_page.goto(activity_url, timeout = 60000)
 
-        activity_elements = page.locator('//div[@class="poi-name margin-bottom-gap"]/h3').all()
-        activity_names = [element.inner_text() for element in activity_elements]
+        activity_page.wait_for_load_state('networkidle')
 
-        price_elements = page.locator('//*[@id="__next"]/div[1]/div[2]/div[2]/div/div/div[2]/div[2]/ul/li/a/div[5]/div[7]').all()
-        prices = [float(element.inner_text().replace('$', '').replace(',', '').replace('From', '').replace(' ', '')) for element in price_elements]
+        activities = activity_page.locator('//div[@class="card-right"]').all()
 
-        rating_elements = page.locator('//*[@id="__next"]/div[1]/div[2]/div[2]/div/div/div[2]/div[2]/ul/li/a/div[5]/div[2]/div[2]/span[1]').all()
-        ratings = [float(element.inner_text().replace('/5', '')) for element in rating_elements]
+        activities_list = []
+        for activity in activities: 
+            activity_dict = {}
+            numbered_title = activity.locator('//div[@class="poi-name margin-bottom-gap"]/h3').inner_text()
+            title = re.sub(r'^\d+\. ', '', numbered_title)
+            activity_dict["title"] = title
+            try:
+                price = float(activity.locator('//div[@class="tour-price"]/span').inner_text(timeout=10).replace('$', '').replace(',', ''))
+            except PlaywrightTimeoutError:
+                price = 0
+            activity_dict["price"] = price
+            rating = float(activity.locator('//span[@class="rating"]').inner_text())
+            activity_dict["rating"] = rating
+            activities_list.append(activity_dict)
 
-        attractions_data = []
-        for name, price, rating in zip(activity_names, prices, ratings):
-            attraction_data = {
-                'title': name,
-                'price': price,
-                'rating': rating
-            }
-            attractions_data.append(attraction_data)
-
-        return attractions_data
-
+        browser.close()
+        
+        return activities_list
 
 def main():
     preferences = get_user_preferences()
