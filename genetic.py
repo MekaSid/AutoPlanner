@@ -15,14 +15,14 @@ def create_population(size, hotels, activities):
 def calculate_cost(individual, trip_length):
     hotel_cost_per_night = float(individual['place']['price'].replace('$', '').replace(',', ''))
     total_hotel_cost = hotel_cost_per_night * trip_length
-    total_activity_cost = sum(activity['cost'] for activity in individual['activities'])
+    total_activity_cost = sum(activity['price'] for activity in individual['activities'])
     return total_hotel_cost + total_activity_cost
 
 def fitness(individual, budget, trip_length):
     total_cost = calculate_cost(individual, trip_length)
     total_value = 0
     try: 
-        total_value = float(individual['place']['rating']) + sum(activity['value'] for activity in individual['activities'])
+        total_value = float(individual['place']['rating']) + sum(activity['rating'] for activity in individual['activities'])
     except KeyError:
         pass
     
@@ -42,9 +42,9 @@ def remove_duplicates(activities):
     seen = set()
     unique_activities = []
     for activity in activities:
-        if activity['name'] not in seen:
+        if activity['title'] not in seen:
             unique_activities.append(activity)
-            seen.add(activity['name'])
+            seen.add(activity['title'])
     return unique_activities
 
 def crossover(parent1, parent2):
