@@ -3,7 +3,6 @@ import genetic
 from datetime import datetime
 import pandas as pd
 import re
-import time 
 
 
 # need to map destinations to attraction IDs lol
@@ -11,11 +10,16 @@ DESTINATION_ATTRACTION_IDS = {
     "greece": "100036",
     "los-angeles": "120518",
     "rome": "303",
+    "milan" : "304", 
+    "frankfurt" : "305", 
+    "berlin" : "306",
+    "paris" : "308",
     "new-york": "248",
     "atlanta": "944",
     "tokyo": "294",
     "las-vegas": "252",
-    "osaka": "293"
+    "osaka": "293",
+    "san-francisco": "249",
 }
 
 def get_user_preferences():
@@ -133,7 +137,7 @@ def activity_scrape(preferences):
 def main():
     preferences = get_user_preferences()
     hotels = hotel_scrape(preferences)
-    # print(hotels)
+    activities = activity_scrape(preferences)
 
     budget = float(preferences['budget'])
     trip_length = (datetime.strptime(preferences['return_date'], "%Y-%m-%d") - datetime.strptime(preferences['start_date'], "%Y-%m-%d")).days
@@ -143,7 +147,7 @@ def main():
     mutation_rate = 0.1
 
 
-    activities = [
+    """activities = [
         {'name': 'Touring Universal Studios Hollywood', 'cost': 100, 'value': 9.5},
         {'name': 'Enjoying a day at Disneyland Resort', 'cost': 150, 'value': 9.5},
         {'name': 'Taking a studio tour at Warner Bros. Studio', 'cost': 60, 'value': 9.0},
@@ -168,7 +172,7 @@ def main():
         {'name': 'Attending a performance at the Ahmanson Theatre', 'cost': 50, 'value': 9.0},
         {'name': 'Visiting the Griffith Park Merry-Go-Round', 'cost': 0, 'value': 7.0},
         {'name': 'Relaxing at Echo Park Lake', 'cost': 0, 'value': 7.5}
-    ]
+    ]"""
 
     best_individual = genetic.run_multiple_times(250, budget, hotels, activities, trip_length, population_size, generations, mutation_rate)
 
@@ -180,15 +184,15 @@ def main():
         total_value = float(best_individual['place']['rating'])
 
         for activity in best_individual['activities']:
-            print(f"Activity: {activity['name']} - Cost: ${activity['cost']}, Value: {activity['value']}")
-            total_value += activity['value']
+            print(f"Activity: {activity['title']} - Cost: ${activity['price']}, Value: {activity['rating']}")
+            total_value += activity['rating']
         
         print(f"Total Cost: ${total_cost}")
         print(f"Total Value: {total_value}")
     else:
         print("No suitable trip found within the budget.")
 
-    # print(activity_scrape(preferences))"""
+    
 
 if __name__ == '__main__':
     main()
