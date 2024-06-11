@@ -5,13 +5,12 @@ By: Sid Meka, Katy Hosokawa, Poornima Godavarthy, Arjun Ranade
 
 An implementation of a project in CSC 481 - Knowledge-Based Systems at Cal Poly with Professor Rodrigo Canaan
 
-Dependencies: pip install playwright
-
-              playwright install chromium
-              
+Dependencies: pip install playwright,
+              playwright install chromium,
               pip install pandas
               
 Run: python main.py
-    Your specified destination must be exactly greece, los Angeles, rome, milan, frankfurt, berlin, Paris, new york, atlanta, tokyo, las vegas, osaka, or san francisco
+    
+Your specified destination must be exactly greece, los Angeles, rome, milan, frankfurt, berlin, Paris, new york, atlanta, tokyo, las vegas, osaka, or san francisco
     
 Demo Video: https://youtu.be/cizvnkPznok
