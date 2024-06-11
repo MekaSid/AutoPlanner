@@ -5,6 +5,8 @@ By: Sid Meka, Katy Hosokawa, Poornima Godavarthy, Arjun Ranade
 
 An implementation of a project in CSC 481 - Knowledge-Based Systems at Cal Poly with Professor Rodrigo Canaan
 
+Frameworks: This project implements Chromium from the Playwright framework for web scraping and browser simulation.
+
 Dependencies: pip install playwright,
               playwright install chromium,
               pip install pandas
