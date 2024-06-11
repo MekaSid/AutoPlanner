@@ -6,7 +6,9 @@ By: Sid Meka, Katy Hosokawa, Poornima Godavarthy, Arjun Ranade
 An implementation of a project in CSC 481 - Knowledge-Based Systems at Cal Poly with Professor Rodrigo Canaan
 
 Dependencies: pip install playwright
+
               playwright install chromium
+              
               pip install pandas
               
 Run: python main.py
